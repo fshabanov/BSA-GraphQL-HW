@@ -4,7 +4,18 @@ const messages = async (_parent, args, context, _info) => {
 
 	const where = filter
 		? {
-				text: filter,
+				OR: [
+					{
+						text: filter,
+					},
+					{
+						responses: {
+							some: {
+								text: filter,
+							},
+						},
+					},
+				],
 		  }
 		: {};
 
