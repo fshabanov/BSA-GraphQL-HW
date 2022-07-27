@@ -31,13 +31,22 @@ export default function NewMessage({ orderBy, orderType }) {
 
 	return (
 		<div>
-			<form onSubmit={handleSubmit}>
+			<form
+				onSubmit={handleSubmit}
+				className='flex items-center w-full bg-white fixed bottom-0	p-3'
+			>
 				<input
 					placeholder='Message'
 					value={message}
 					onChange={(e) => setMessage(e.target.value)}
+					className='border border-black p-3 rounded-md w-[90%]'
 				/>
-				<button type='submit'>Send</button>
+				<button
+					type='submit'
+					className='border border-black py-3 px-5 rounded-md ml-4'
+				>
+					Send
+				</button>
 			</form>
 		</div>
 	);

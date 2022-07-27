@@ -32,83 +32,51 @@ export default function RateButton({ likes, dislikes, messageId, isResponse }) {
 		onCompleted: () => {},
 	});
 
-	const likeHandler = isResponse ? updateResponseLikeAmount : updateLikeAmount;
-	const dislikeHandler = isResponse
-		? updateResponseDislikeAmount
-		: updateDislikeAmount;
+	const likeHandler = (amount) =>
+		isResponse
+			? updateResponseLikeAmount({
+					variables: { id, amount },
+			  })
+			: updateLikeAmount({
+					variables: { id, amount },
+			  });
+	const dislikeHandler = (amount) =>
+		isResponse
+			? updateResponseDislikeAmount({ variables: { id, amount } })
+			: updateDislikeAmount({ variables: { id, amount } });
 
 	const handleLike = () => {
 		if (userRate === 'like') {
-			likeHandler({
-				variables: {
-					id,
-					amount: -1,
-				},
-			});
+			likeHandler(-1);
 			setUserRate('');
 			return;
 		}
 		if (userRate === 'dislike') {
-			dislikeHandler({
-				variables: {
-					id,
-					amount: -1,
-				},
-			});
-			likeHandler({
-				variables: {
-					id,
-					amount: 1,
-				},
-			});
+			dislikeHandler(-1);
+			likeHandler(1);
 			setUserRate('like');
 
 			return;
 		}
-		likeHandler({
-			variables: {
-				id,
-				amount: 1,
-			},
-		});
+		likeHandler(1);
 		setUserRate('like');
 	};
 
 	const handleDislike = () => {
 		if (userRate === 'dislike') {
-			dislikeHandler({
-				variables: {
-					id,
-					amount: -1,
-				},
-			});
+			dislikeHandler(-1);
 			setUserRate('');
 
 			return;
 		}
 		if (userRate === 'like') {
-			likeHandler({
-				variables: {
-					id,
-					amount: -1,
-				},
-			});
-			dislikeHandler({
-				variables: {
-					id,
-					amount: 1,
-				},
-			});
+			likeHandler(-1);
+			dislikeHandler(1);
 			setUserRate('dislike');
 
 			return;
 		}
-		dislikeHandler({
-			variables: {
-				id,
-				amount: 1,
-			},
-		});
+		dislikeHandler(1);
 		setUserRate('dislike');
 	};
 

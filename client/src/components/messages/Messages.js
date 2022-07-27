@@ -2,6 +2,7 @@ import { useQuery } from '@apollo/client';
 import React, { useEffect } from 'react';
 import Message from './Message';
 import NewMessage from './NewMessage';
+import Loader from '../Loader';
 import {
 	GET_MESSAGES,
 	MESSAGE_RATE,
@@ -9,6 +10,10 @@ import {
 	NEW_RESPONSE,
 	RESPONSE_RATE,
 } from '../../queries';
+import { newMessageSubscribe } from '../../helpers/newMessageSubscribe';
+import { newResponseSubscribe } from '../../helpers/newResponseSubscribe';
+import { messageRateSubscribe } from '../../helpers/messageRateSubscribe';
+import { responseRateSubscribe } from '../../helpers/responseRateSubscribe';
 
 export default function Messages({
 	orderBy,
@@ -38,135 +43,42 @@ export default function Messages({
 
 	useEffect(() => {
 		refetch({
-			variables: {
-				orderBy: {
-					[orderBy]: orderType,
-				},
-				filter,
-				skip: (page - 1) * messagesPerPage,
-				take: messagesPerPage,
+			orderBy: {
+				[orderBy]: orderType,
 			},
+			filter,
+			skip: (page - 1) * messagesPerPage,
+			take: messagesPerPage,
 		});
 	}, [orderBy, orderType, refetch, filter, page, messagesPerPage]);
 
 	useEffect(() => {
 		subscribeToMore({
 			document: NEW_MESSAGE,
-			updateQuery: (prev, { subscriptionData }) => {
-				if (!subscriptionData.data) {
-					return prev;
-				}
-				const { newMessage } = subscriptionData.data;
-				if (!prev.messages.messageList) {
-					return {
-						...prev,
-						messages: {
-							...prev.messages,
-							messageList: [{ ...newMessage }],
-						},
-					};
-				}
-				return {
-					...prev,
-					messages: {
-						...prev.messages,
-						messageList: [{ ...newMessage }, ...prev.messages.messageList],
-					},
-				};
-			},
+			updateQuery: newMessageSubscribe,
 		});
 
 		subscribeToMore({
 			document: NEW_RESPONSE,
-			updateQuery: (prev, { subscriptionData }) => {
-				if (!subscriptionData.data) {
-					return prev;
-				}
-				const { newResponse } = subscriptionData.data;
-				const newMessageList = prev.messages.messageList.map((m) => {
-					if (m.id === newResponse.messageId) {
-						return {
-							...m,
-							responses: [...m.responses, newResponse],
-						};
-					}
-					return m;
-				});
-				return {
-					...prev,
-					messages: {
-						...prev.messages,
-						messageList: newMessageList,
-					},
-				};
-			},
+			updateQuery: newResponseSubscribe,
 		});
 
 		subscribeToMore({
 			document: MESSAGE_RATE,
-			updateQuery: (prev, { subscriptionData }) => {
-				if (!subscriptionData.data) return prev;
-				const { messageRate } = subscriptionData.data;
-				const newMessageList = prev?.messages?.messageList?.map((m) => {
-					if (m.id === messageRate.id) {
-						return {
-							...m,
-							likes: messageRate.likes,
-							dislikes: messageRate.dislikes,
-						};
-					}
-					return m;
-				});
-				return {
-					...prev,
-					messages: {
-						...prev.messages,
-						messageList: newMessageList,
-					},
-				};
-			},
+			updateQuery: messageRateSubscribe,
 		});
 
 		subscribeToMore({
 			document: RESPONSE_RATE,
-			updateQuery: (prev, { subscriptionData }) => {
-				console.log(subscriptionData.data);
-				if (!subscriptionData.data) return prev;
-				const { responseRate } = subscriptionData.data;
-				const message = prev?.messages?.messageList.find(
-					(m) => m.id === responseRate.messageId
-				);
-				if (!message) return prev;
-				const newMessage = message?.responses?.map((r) => {
-					if (r.id === responseRate.id) {
-						return {
-							...r,
-							likes: responseRate.likes,
-							dislikes: responseRate.dislikes,
-						};
-					}
-					return r;
-				});
-
-				const newMessageList = prev.messages.messageList.map((m) => {
-					if (m.id === newMessage.id) {
-						return newMessage;
-					}
-					return m;
-				});
-				return {
-					...prev,
-					messages: {
-						...prev.messages,
-						messageList: newMessageList,
-					},
-				};
-			},
+			updateQuery: responseRateSubscribe,
 		});
 	}, [subscribeToMore]);
 
+	if (loading) return <Loader />;
+	if (error) return <div>Error... {error.message}</div>;
+
 	return (
-		<div className='m-10'>
+		<div className='m-10 mb-20'>
 			{data?.messages?.messageList.map(
 				({ id, text, created_at, likes, dislikes, responses }) => (
 					<div key={id} className='border border-black rounded-lg my-5 p-5'>
