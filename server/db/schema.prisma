@@ -1,0 +1,28 @@
+datasource db {
+    provider = "postgresql"
+    url = env("DATABASE_URL")
+}
+
+model Message {
+    id Int @id @default(autoincrement())
+    text String
+    created_at DateTime @default(now())
+    likes Int @default(0)
+    dislikes Int @default(0)
+    responses Response[]
+}
+
+model Response {
+    id Int @id @default(autoincrement())
+    text String
+    created_at DateTime @default(now())
+    likes Int @default(0)
+    dislikes Int @default(0)
+    message Message @relation(fields: [messageId], references: [id])
+    messageId Int
+}
+
+generator client {
+    provider = "prisma-client-js"
+    output = "../src/generated/prisma-client-js"
+}

@@ -1,0 +1,54 @@
+type Query {
+	messages(orderBy: MessageOrderByInput): [Message!]!
+}
+
+type Message {
+	id: ID!
+	text: String!
+	created_at: String!
+	likes: Int!
+	dislikes: Int!
+	responses: [Response!]!
+}
+
+type Response {
+	id: ID!
+	text: String!
+	created_at: String!
+	likes: Int!
+	dislikes: Int!
+	message: Message!
+}
+
+input MessageInput {
+	text: String!
+}
+
+input ResponseInput {
+	text: String!
+	messageId: ID!
+}
+
+enum Sort {
+	asc
+	desc
+}
+
+input MessageOrderByInput {
+	created_at: Sort
+	likes: Sort
+	dislikes: Sort
+}
+
+type Mutation {
+	createMessage(message: MessageInput!): Message!
+	updateLikeAmount(id: ID!, amount: Int!): Message!
+	updateDislikeAmount(id: ID!, amount: Int!): Message!
+	createResponse(response: ResponseInput!): Response!
+	updateResponseLikeAmount(id: ID!, amount: Int!): Response!
+	updateResponseDislikeAmount(id: ID!, amount: Int!): Response!
+}
+
+type Subscription {
+	newMessage: Message!
+}
