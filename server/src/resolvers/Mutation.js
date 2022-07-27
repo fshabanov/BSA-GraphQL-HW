@@ -1,4 +1,9 @@
-const { NEW_MESSAGE } = require('../events');
+const {
+	NEW_MESSAGE,
+	NEW_RESPONSE,
+	MESSAGE_RATE,
+	RESPONSE_RATE,
+} = require('../events');
 
 const createMessage = async (_parent, args, context, _info) => {
 	const newMessage = context.prisma.message.create({
@@ -11,16 +16,16 @@ const createMessage = async (_parent, args, context, _info) => {
 const updateLikeAmount = async (_parent, args, context, _info) => {
 	// amount is +- 1
 	const { id, amount } = args;
-	const message = context.prisma.message
+	const doesMessageExist = context.prisma.message
 		.findUnique({
 			where: { id: Number(id) },
 			select: { id: true },
 		})
 		.then(Boolean);
 
-	if (!message) throw new Error('No message with this ID exists');
+	if (!doesMessageExist) throw new Error('No message with this ID exists');
 
-	return await context.prisma.message.update({
+	const message = await context.prisma.message.update({
 		where: {
 			id: Number(id),
 		},
@@ -30,20 +35,23 @@ const updateLikeAmount = async (_parent, args, context, _info) => {
 			},
 		},
 	});
+
+	context.pubSub.publish(MESSAGE_RATE, message);
+	return message;
 };
 
 const updateDislikeAmount = async (_parent, args, context, _info) => {
 	const { id, amount } = args;
-	const message = context.prisma.message
+	const doesMessageExist = context.prisma.message
 		.findUnique({
 			where: { id: +id },
 			select: { id: true },
 		})
 		.then(Boolean);
 
-	if (!message) throw new Error('Message with this ID does not exist');
+	if (!doesMessageExist) throw new Error('Message with this ID does not exist');
 
-	return await context.prisma.message.update({
+	const message = await context.prisma.message.update({
 		where: { id: +id },
 		data: {
 			dislikes: {
@@ -51,6 +59,9 @@ const updateDislikeAmount = async (_parent, args, context, _info) => {
 			},
 		},
 	});
+
+	context.pubSub.publish(MESSAGE_RATE, message);
+	return message;
 };
 
 const createResponse = async (_parent, args, context, _info) => {
@@ -67,7 +78,7 @@ const createResponse = async (_parent, args, context, _info) => {
 
 	if (!doesMessageExist) throw new Error('Message with this ID does not exist');
 
-	return context.prisma.response.create({
+	const response = context.prisma.response.create({
 		data: {
 			text,
 			message: {
@@ -77,21 +88,24 @@ const createResponse = async (_parent, args, context, _info) => {
 			},
 		},
 	});
+
+	context.pubSub.publish(NEW_RESPONSE, response);
+	return response;
 };
 
 const updateResponseLikeAmount = async (_parent, args, context, _info) => {
 	// amount is +- 1
 	const { id, amount } = args;
-	const response = context.prisma.response
+	const doesResponseExist = context.prisma.response
 		.findUnique({
 			where: { id: Number(id) },
 			select: { id: true },
 		})
 		.then(Boolean);
 
-	if (!response) throw new Error('No message with this ID exists');
+	if (!doesResponseExist) throw new Error('No message with this ID exists');
 
-	return await context.prisma.response.update({
+	const response = await context.prisma.response.update({
 		where: {
 			id: Number(id),
 		},
@@ -101,20 +115,24 @@ const updateResponseLikeAmount = async (_parent, args, context, _info) => {
 			},
 		},
 	});
+
+	context.pubSub.publish(RESPONSE_RATE, response);
+	return response;
 };
 
 const updateResponseDislikeAmount = async (_parent, args, context, _info) => {
 	const { id, amount } = args;
-	const response = context.prisma.response
+	const doesResponseExist = context.prisma.response
 		.findUnique({
 			where: { id: Number(id) },
 			select: { id: true },
 		})
 		.then(Boolean);
 
-	if (!response) throw new Error('Message with this ID does not exist');
+	if (!doesResponseExist)
+		throw new Error('Message with this ID does not exist');
 
-	return await context.prisma.response.update({
+	const response = await context.prisma.response.update({
 		where: { id: Number(id) },
 		data: {
 			dislikes: {
@@ -122,6 +140,8 @@ const updateResponseDislikeAmount = async (_parent, args, context, _info) => {
 			},
 		},
 	});
+	context.pubSub.publish(RESPONSE_RATE, response);
+	return response;
 };
 
 module.exports = {
