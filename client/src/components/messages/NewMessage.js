@@ -2,10 +2,19 @@ import { useMutation } from '@apollo/client';
 import React, { useState } from 'react';
 import { CREATE_MESSAGE, GET_MESSAGES } from '../../queries';
 
-export default function NewMessage() {
+export default function NewMessage({ orderBy, orderType }) {
 	const [message, setMessage] = useState('');
 	const [createProduct, { loading, error }] = useMutation(CREATE_MESSAGE, {
-		refetchQueries: [{ query: GET_MESSAGES }],
+		refetchQueries: [
+			{
+				query: GET_MESSAGES,
+				variables: {
+					orderBy: {
+						[orderBy]: orderType,
+					},
+				},
+			},
+		],
 		onCompleted: () => setMessage(''),
 	});
 

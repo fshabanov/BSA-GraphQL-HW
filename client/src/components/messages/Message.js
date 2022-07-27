@@ -10,12 +10,23 @@ export default function Message({
 	dislikes,
 	created_at,
 	isResponse,
+	orderBy,
+	orderType,
 }) {
 	const [showReplyInput, setShowReplyInput] = useState(false);
 	const [response, setResponse] = useState('');
 
 	const [createResponse] = useMutation(CREATE_RESPONSE, {
-		refetchQueries: [{ query: GET_MESSAGES }],
+		refetchQueries: [
+			{
+				query: GET_MESSAGES,
+				variables: {
+					orderBy: {
+						[orderBy]: orderType,
+					},
+				},
+			},
+		],
 		onCompleted: () => setResponse(''),
 	});
 

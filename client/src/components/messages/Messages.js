@@ -2,9 +2,22 @@ import { useQuery } from '@apollo/client';
 import React, { useEffect } from 'react';
 import Message from './Message';
 import NewMessage from './NewMessage';
-import { GET_MESSAGES, NEW_MESSAGE } from '../../queries';
+import {
+	GET_MESSAGES,
+	MESSAGE_RATE,
+	NEW_MESSAGE,
+	NEW_RESPONSE,
+	RESPONSE_RATE,
+} from '../../queries';
 
-export default function Messages({ orderBy, orderType }) {
+export default function Messages({
+	orderBy,
+	orderType,
+	filter,
+	setCount,
+	page,
+	messagesPerPage,
+}) {
 	const { loading, error, data, subscribeToMore, refetch } = useQuery(
 		GET_MESSAGES,
 		{
@@ -12,9 +25,16 @@ export default function Messages({ orderBy, orderType }) {
 				orderBy: {
 					[orderBy]: orderType,
 				},
+				filter,
+				skip: (page - 1) * messagesPerPage,
+				take: messagesPerPage,
 			},
 		}
 	);
+
+	useEffect(() => {
+		setCount(data?.messages?.count || 0);
+	}, [data, setCount]);
 
 	useEffect(() => {
 		refetch({
@@ -22,9 +42,12 @@ export default function Messages({ orderBy, orderType }) {
 				orderBy: {
 					[orderBy]: orderType,
 				},
+				filter,
+				skip: (page - 1) * messagesPerPage,
+				take: messagesPerPage,
 			},
 		});
-	}, [orderBy]);
+	}, [orderBy, orderType, refetch, filter, page, messagesPerPage]);
 
 	useEffect(() => {
 		subscribeToMore({
@@ -52,14 +75,106 @@ export default function Messages({ orderBy, orderType }) {
 				};
 			},
 		});
+
+		subscribeToMore({
+			document: NEW_RESPONSE,
+			updateQuery: (prev, { subscriptionData }) => {
+				if (!subscriptionData.data) {
+					return prev;
+				}
+				const { newResponse } = subscriptionData.data;
+				const newMessageList = prev.messages.messageList.map((m) => {
+					if (m.id === newResponse.messageId) {
+						return {
+							...m,
+							responses: [...m.responses, newResponse],
+						};
+					}
+					return m;
+				});
+				return {
+					...prev,
+					messages: {
+						...prev.messages,
+						messageList: newMessageList,
+					},
+				};
+			},
+		});
+
+		subscribeToMore({
+			document: MESSAGE_RATE,
+			updateQuery: (prev, { subscriptionData }) => {
+				if (!subscriptionData.data) return prev;
+				const { messageRate } = subscriptionData.data;
+				const newMessageList = prev?.messages?.messageList?.map((m) => {
+					if (m.id === messageRate.id) {
+						return {
+							...m,
+							likes: messageRate.likes,
+							dislikes: messageRate.dislikes,
+						};
+					}
+					return m;
+				});
+				return {
+					...prev,
+					messages: {
+						...prev.messages,
+						messageList: newMessageList,
+					},
+				};
+			},
+		});
+
+		subscribeToMore({
+			document: RESPONSE_RATE,
+			updateQuery: (prev, { subscriptionData }) => {
+				console.log(subscriptionData.data);
+				if (!subscriptionData.data) return prev;
+				const { responseRate } = subscriptionData.data;
+				const message = prev?.messages?.messageList.find(
+					(m) => m.id === responseRate.messageId
+				);
+				if (!message) return prev;
+				const newMessage = message?.responses?.map((r) => {
+					if (r.id === responseRate.id) {
+						return {
+							...r,
+							likes: responseRate.likes,
+							dislikes: responseRate.dislikes,
+						};
+					}
+					return r;
+				});
+
+				const newMessageList = prev.messages.messageList.map((m) => {
+					if (m.id === newMessage.id) {
+						return newMessage;
+					}
+					return m;
+				});
+				return {
+					...prev,
+					messages: {
+						...prev.messages,
+						messageList: newMessageList,
+					},
+				};
+			},
+		});
 	}, [subscribeToMore]);
 
 	return (
 		<div className='m-10'>
-			{data?.messages.map(
+			{data?.messages?.messageList.map(
 				({ id, text, created_at, likes, dislikes, responses }) => (
-					<div key={id} className='border rounded-lg my-5 p-5'>
-						<Message {...{ id, text, created_at, likes, dislikes }} />
+					<div key={id} className='border border-black rounded-lg my-5 p-5'>
+						<Message
+							{...{ id, text, created_at, likes, dislikes }}
+							orderBy={orderBy}
+							orderType={orderType}
+						/>
 						{(responses?.length || '') && (
 							<div className='bg-gray-100 p-3 rounded-lg m-5'>
 								{[...responses]
@@ -69,7 +184,12 @@ export default function Messages({ orderBy, orderType }) {
 											key={response.id}
 											className='my-5 border-b-2 border-white p-5'
 										>
-											<Message {...response} isResponse />
+											<Message
+												{...response}
+												isResponse
+												orderBy={orderBy}
+												orderType={orderType}
+											/>
 										</div>
 									))}
 							</div>
@@ -77,7 +197,7 @@ export default function Messages({ orderBy, orderType }) {
 					</div>
 				)
 			)}
-			<NewMessage />
+			<NewMessage orderBy={orderBy} orderType={orderType} />
 		</div>
 	);
 }

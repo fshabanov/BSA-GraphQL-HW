@@ -1,20 +1,28 @@
 import { gql } from '@apollo/client';
 
 export const GET_MESSAGES = gql`
-	query getMessages($orderBy: MessageOrderByInput) {
-		messages(orderBy: $orderBy) {
-			id
-			text
-			created_at
-			likes
-			dislikes
-			responses {
+	query getMessages(
+		$orderBy: MessageOrderByInput
+		$filter: String
+		$skip: Int
+		$take: Int
+	) {
+		messages(orderBy: $orderBy, filter: $filter, skip: $skip, take: $take) {
+			messageList {
 				id
 				text
 				created_at
 				likes
 				dislikes
+				responses {
+					id
+					text
+					created_at
+					likes
+					dislikes
+				}
 			}
+			count
 		}
 	}
 `;
@@ -81,6 +89,38 @@ export const CREATE_RESPONSE = gql`
 	mutation createResponse($response: ResponseInput!) {
 		createResponse(response: $response) {
 			id
+		}
+	}
+`;
+
+export const NEW_RESPONSE = gql`
+	subscription newResponse {
+		newResponse {
+			id
+			text
+			likes
+			dislikes
+			messageId
+		}
+	}
+`;
+
+export const MESSAGE_RATE = gql`
+	subscription messageRate {
+		messageRate {
+			id
+			likes
+			dislikes
+		}
+	}
+`;
+export const RESPONSE_RATE = gql`
+	subscription responseRate {
+		responseRate {
+			id
+			likes
+			dislikes
+			messageId
 		}
 	}
 `;
