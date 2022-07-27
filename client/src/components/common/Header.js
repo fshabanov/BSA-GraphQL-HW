@@ -40,6 +40,7 @@ export default function Header({
 		clearTimeout(timeout);
 		timeout = setTimeout(() => {
 			setFilter(e.target.value);
+			setPage(1);
 		}, 500);
 	};
 
